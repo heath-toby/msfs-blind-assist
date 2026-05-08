@@ -5376,6 +5376,40 @@ public class PMDG777Definition : BaseAircraftDefinition
         }
 
         // ------------------------------------------------------------------
+        // 2f. Flap lever — the base EVT_CONTROL_STAND_FLAPS_LEVER is a mouse
+        //     drag event; sending an index to it leaves the lever in an
+        //     invalid state and breaks subsequent flap input. Use the
+        //     per-detent EVT_CONTROL_STAND_FLAPS_LEVER_<deg> events instead.
+        // ------------------------------------------------------------------
+        if (varKey == "FCTL_Flaps")
+        {
+            int target = (int)value;
+            var dm = simConnect.PMDG777DataManager;
+            if (dm != null && (int)dm.GetFieldValue("FCTL_Flaps_Lever") == target)
+            {
+                return true;
+            }
+            string detentSuffix = target switch
+            {
+                0 => "_0",
+                1 => "_1",
+                2 => "_5",
+                3 => "_15",
+                4 => "_20",
+                5 => "_25",
+                6 => "_30",
+                _ => string.Empty
+            };
+            if (detentSuffix.Length == 0) return true;
+            string detentEvent = "EVT_CONTROL_STAND_FLAPS_LEVER" + detentSuffix;
+            if (EventIds.TryGetValue(detentEvent, out int detentId))
+            {
+                simConnect.SendPMDGEvent(detentEvent, (uint)detentId, 1);
+            }
+            return true;
+        }
+
+        // ------------------------------------------------------------------
         // 3. Momentary / button press — CDA parameter 1 = "pressed"
         //    (CDA parameter 0 means "not pressed" which is a no-op)
         // ------------------------------------------------------------------
